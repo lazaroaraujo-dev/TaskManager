@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: taskmanager
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+# Configuração opcional para ver logs mais detalhados caso dê erro na conexão
+logging:
+  level:
+    org.springframework.data.redis: DEBUG
