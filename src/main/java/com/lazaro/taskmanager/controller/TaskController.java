@@ -37,7 +37,11 @@ public class TaskController {
         List<TaskResponse> response = taskService.listarPorUsuario(userId);
         return ResponseEntity.ok(response);
     }
-
+    @GetMapping("/project/{projectId}")
+    public ResponseEntity<List<TaskResponse>> listarPorProjeto(@PathVariable String projectId) {
+        List<TaskResponse> response = taskService.listarPorProjeto(projectId);
+        return ResponseEntity.ok(response);
+    }
     @GetMapping
     public ResponseEntity<List<TaskResponse>> listarTodas() {
         List<TaskResponse> response = taskService.listarTodas();
@@ -48,5 +52,11 @@ public class TaskController {
     public ResponseEntity<Void> deletar(@PathVariable String id) {
         taskService.deletar(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/concluir")
+    public ResponseEntity<TaskResponse> concluir(@PathVariable String id) {
+        TaskResponse response = taskService.concluir(id);
+        return ResponseEntity.ok(response);
     }
 }

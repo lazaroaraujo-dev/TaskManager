@@ -1,7 +1,6 @@
 package com.lazaro.taskmanager.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import java.util.Set;
 
 public record TaskRequest(
@@ -10,11 +9,13 @@ public record TaskRequest(
 
         String description,
 
-        @NotNull(message = "O ID do usuário é obrigatório")
+        @NotBlank(message = "O ID do usuário é obrigatório")
         String userId,
+
+        // Padrão de mercado: opcional. Fica sem anotações de validação.
+        String projectId,
 
         Set<String> tags,
 
-        // Opcional: tempo de vida em segundos (ex: 86400 para expirar em 24h)
         Long ttl
 ) {}

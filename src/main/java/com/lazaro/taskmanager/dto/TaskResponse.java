@@ -10,6 +10,7 @@ public record TaskResponse(
         String description,
         StatusTarefa status,
         String userId,
+        String projectId,
         Set<String> tags,
         Long ttl
 ) {
@@ -20,6 +21,7 @@ public record TaskResponse(
                 task.getDescription(),
                 task.getStatus(),
                 task.getUserId(),
+                task.getProjectId(),
                 task.getTags(),
                 task.getTtl()
         );

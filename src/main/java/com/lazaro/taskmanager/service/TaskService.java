@@ -3,11 +3,14 @@ package com.lazaro.taskmanager.service;
 import com.lazaro.taskmanager.dto.TaskRequest;
 import com.lazaro.taskmanager.dto.TaskResponse;
 import com.lazaro.taskmanager.model.Task;
+import com.lazaro.taskmanager.model.StatusTarefa;
 import com.lazaro.taskmanager.model.User;
+import com.lazaro.taskmanager.repository.ProjectRepository;
 import com.lazaro.taskmanager.repository.TaskRepository;
 import com.lazaro.taskmanager.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -16,27 +19,42 @@ public class TaskService {
 
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
+    private final ProjectRepository projectRepository;
 
-    public TaskService(TaskRepository taskRepository, UserRepository userRepository) {
+    public TaskService(TaskRepository taskRepository,
+                       UserRepository userRepository,
+                       ProjectRepository projectRepository) {
         this.taskRepository = taskRepository;
         this.userRepository = userRepository;
+        this.projectRepository = projectRepository;
     }
 
     public TaskResponse criar(TaskRequest request) {
 
+        // 1. Valida se o utilizador existe
         User dono = userRepository.buscarPorId(request.userId());
         if (dono == null) {
             throw new RuntimeException("Usuário responsável não encontrado.");
         }
 
+        // 2. Valida se o projeto existe (caso tenha sido enviado no request)
+        if (request.projectId() != null && !request.projectId().isBlank()) {
+            if (projectRepository.buscarPorId(request.projectId()) == null) {
+                throw new RuntimeException("Projeto não encontrado.");
+            }
+        }
+
+        // 3. Constrói a Tarefa mapeando todos os campos do Request
         Task task = Task.builder()
                 .title(request.title())
                 .description(request.description())
                 .userId(request.userId())
-                .tags(request.tags() != null ? request.tags() : java.util.Collections.emptySet())
+                .projectId(request.projectId())
+                .tags(request.tags() != null ? request.tags() : Collections.emptySet())
                 .ttl(request.ttl())
-                .build();
+                .build(); // Faltava fechar o builder
 
+        // 4. Salva no Valkey e devolve a resposta formatada
         Task salva = taskRepository.salvar(task);
         return new TaskResponse(salva);
     }
@@ -55,6 +73,13 @@ public class TaskService {
                 .collect(Collectors.toList());
     }
 
+    // NOVO: Método para listar tarefas de um projeto específico
+    public List<TaskResponse> listarPorProjeto(String projectId) {
+        return taskRepository.buscarPorProjeto(projectId).stream()
+                .map(TaskResponse::new)
+                .collect(Collectors.toList());
+    }
+
     public List<TaskResponse> listarTodas() {
         return taskRepository.buscarTodas().stream()
                 .map(TaskResponse::new)
@@ -67,5 +92,15 @@ public class TaskService {
             throw new RuntimeException("Tarefa não encontrada.");
         }
         taskRepository.excluir(id);
+    }
+
+    public TaskResponse concluir(String id) {
+        Task task = taskRepository.buscarPorId(id);
+        if (task == null) {
+            throw new RuntimeException("Tarefa não encontrada.");
+        }
+        task.setStatus(StatusTarefa.CONCLUIDA);
+        taskRepository.atualizar(task);
+        return new TaskResponse(task);
     }
 }

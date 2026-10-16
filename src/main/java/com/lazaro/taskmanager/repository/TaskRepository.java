@@ -33,10 +33,14 @@ public class TaskRepository {
         hash.put("description", task.getDescription() != null ? task.getDescription() : "");
         hash.put("status", task.getStatus().name());
         hash.put("userId", task.getUserId());
+        hash.put("projectId", task.getProjectId() != null ? task.getProjectId() : "");
         hash.put("tags", String.join(",", task.getTags()));
 
         valkey.opsForHash().putAll(key, hash);
 
+        if (task.getProjectId() != null && !task.getProjectId().isBlank()) {
+            valkey.opsForSet().add("project:" + task.getProjectId() + ":tasks", task.getId());
+        }
 
         valkey.opsForSet().add(ALL_TASKS_SET, task.getId());
         valkey.opsForSet().add("user:" + task.getUserId() + ":tasks", task.getId());
@@ -64,12 +68,15 @@ public class TaskRepository {
 
         Long remainingTtl = valkey.getExpire(key);
 
+        String projectId = (String) entries.get("projectId");
+
         return Task.builder()
                 .id((String) entries.get("id"))
                 .title((String) entries.get("title"))
                 .description((String) entries.get("description"))
                 .status(StatusTarefa.valueOf((String) entries.get("status")))
                 .userId((String) entries.get("userId"))
+                .projectId(projectId != null && !projectId.isBlank() ? projectId : null)
                 .tags(tags)
                 .ttl(remainingTtl != null && remainingTtl > 0 ? remainingTtl : null)
                 .build();
@@ -111,6 +118,18 @@ public class TaskRepository {
         }
         return tasks;
     }
+    public List<Task> buscarPorProjeto(String projectId) {
+        Set<String> taskIds = valkey.opsForSet().members("project:" + projectId + ":tasks");
+        if (taskIds == null || taskIds.isEmpty()) return Collections.emptyList();
+
+        List<Task> tasks = new ArrayList<>();
+        for (String taskId : taskIds) {
+            Task task = buscarPorId(taskId);
+            if (task != null) tasks.add(task);
+            else valkey.opsForSet().remove("project:" + projectId + ":tasks", taskId);
+        }
+        return tasks;
+    }
 
     public void atualizar(Task task) {
         salvar(task);
@@ -122,6 +141,9 @@ public class TaskRepository {
             valkey.delete(KEY_PREFIX + id);
             valkey.opsForSet().remove(ALL_TASKS_SET, id);
             valkey.opsForSet().remove("user:" + task.getUserId() + ":tasks", id);
+            if (task.getProjectId() != null && !task.getProjectId().isBlank()) {
+                valkey.opsForSet().remove("project:" + task.getProjectId() + ":tasks", id);
+            }
         }
     }
 }
