@@ -46,6 +46,7 @@ O projeto foi desenvolvido como trabalho acadêmico com foco em:
 - ✅ **Gestão de Projetos** por usuário
 - ✅ **Gestão de Tarefas** com associação opcional a projeto e tags
 - ✅ **Conclusão de tarefas** via endpoint dedicado (`PATCH`) com mudança de status
+- ✅ **Estatísticas de produtividade** por usuário — contador atômico de tarefas concluídas no Valkey (`GET /api/users/{id}/stats`)
 - ✅ **Validação de entrada** com Bean Validation (`@NotBlank`, `@Email`, `@Size`)
 - ✅ **TTL (Time To Live)** opcional por tarefa, com expiração automática no banco
 - ✅ **Índices secundários** para listagens por usuário e por projeto
@@ -122,6 +123,7 @@ Como um banco chave-valor não possui tabelas nem relacionamentos, os "índices"
 | `tasks:all` | Set | todos os IDs de tarefa | Listagem geral |
 | `user:{userId}:tasks` | Set | tarefas do usuário | Listar tarefas por usuário |
 | `project:{projectId}:tasks` | Set | tarefas do projeto | Listar tarefas por projeto |
+| `user:{userId}:stats:completed` | String (contador) | total de tarefas concluídas | Estatísticas do usuário (`INCR` atômico) |
 
 > **Consistência preguiçosa:** ao listar, IDs apontando para registros já excluídos são removidos automaticamente dos Sets, mantendo os índices limpos.
 
@@ -136,6 +138,7 @@ Como um banco chave-valor não possui tabelas nem relacionamentos, os "índices"
 - Toda tarefa nasce com status **`PENDENTE`**.
 - Status possíveis: `PENDENTE` e `CONCLUIDA`.
 - Concluir uma tarefa é feito via `PATCH /api/tasks/{id}/concluir`.
+- Ao concluir, o contador `user:{userId}:stats:completed` é **incrementado de forma atômica** (`INCR`) no Valkey.
 - O **TTL** (em segundos), quando informado, define expiração automática da tarefa.
 - Tags nulas são normalizadas para conjunto vazio.
 
@@ -143,6 +146,12 @@ Como um banco chave-valor não possui tabelas nem relacionamentos, os "índices"
 - **Nome**, **e-mail** (formato válido) e **senha** (mínimo 6 caracteres) são obrigatórios.
 - O **e-mail** deve ser **único** no sistema.
 - A senha nunca é exposta nas respostas (`UserResponse` a omite).
+
+### Estatísticas
+- O contador de tarefas concluídas é por **usuário** e vive na chave `user:{userId}:stats:completed`.
+- A chave é **criada sob demanda**: usuários sem tarefas concluídas retornam `0`.
+- Ler estatísticas de um **usuário inexistente** retorna erro (`Usuário não encontrado.`).
+- A leitura é um `GET` simples; a escrita é um `INCR` atômico — sem condições de corrida.
 
 ### Projetos
 - **Nome** e **ID do usuário dono** são obrigatórios.
@@ -182,6 +191,7 @@ Base local: `http://localhost:8080`
 |---|---|---|
 | `POST` | `/api/users` | Cria um novo usuário |
 | `GET` | `/api/users/{id}` | Busca usuário por ID |
+| `GET` | `/api/users/{id}/stats` | Total de tarefas concluídas do usuário |
 | `GET` | `/api/users` | Lista todos os usuários |
 | `DELETE` | `/api/users/{id}` | Remove um usuário |
 
@@ -291,6 +301,21 @@ curl -X POST http://localhost:8080/api/tasks \
 
 ```bash
 curl -X PATCH http://localhost:8080/api/tasks/<ID_DA_TAREFA>/concluir
+```
+</details>
+
+<details>
+<summary><b>Buscar estatísticas do usuário</b></summary>
+
+```bash
+curl http://localhost:8080/api/users/<ID_DO_USUARIO>/stats
+```
+
+```json
+{
+  "userId": "3f1c2e8a-...",
+  "tarefasConcluidas": 7
+}
 ```
 </details>
 
