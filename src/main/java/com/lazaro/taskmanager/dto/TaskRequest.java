@@ -12,7 +12,6 @@ public record TaskRequest(
         @NotBlank(message = "O ID do usuário é obrigatório")
         String userId,
 
-        // Padrão de mercado: opcional. Fica sem anotações de validação.
         String projectId,
 
         Set<String> tags,

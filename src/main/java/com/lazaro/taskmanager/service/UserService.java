@@ -42,6 +42,16 @@ public class UserService {
         }
         return new UserResponse(user);
     }
+    public int buscarTarefasConcluidas(String userId) {
+        // Valida se o usuário existe antes de buscar a estatística
+        User user = userRepository.buscarPorId(userId);
+        if (user == null) {
+            throw new RuntimeException("Usuário não encontrado.");
+        }
+
+        // Faz o repasse para o repositório que busca a chave no Valkey
+        return userRepository.buscarTarefasConcluidas(userId);
+    }
 
     public List<UserResponse> listarTodos() {
         return userRepository.buscarTodos().stream()

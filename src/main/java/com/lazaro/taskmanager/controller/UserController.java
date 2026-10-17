@@ -2,6 +2,7 @@ package com.lazaro.taskmanager.controller;
 
 import com.lazaro.taskmanager.dto.UserRequest;
 import com.lazaro.taskmanager.dto.UserResponse;
+import com.lazaro.taskmanager.dto.UserStatsResponse;
 import com.lazaro.taskmanager.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -30,6 +31,12 @@ public class UserController {
     public ResponseEntity<UserResponse> buscarPorId(@PathVariable String id) {
         UserResponse response = userService.buscarPorId(id);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}/stats")
+    public ResponseEntity<UserStatsResponse> buscarEstatisticas(@PathVariable String id) {
+        int concluidas = userService.buscarTarefasConcluidas(id); // Crie este repasse no UserService
+        return ResponseEntity.ok(new UserStatsResponse(id, concluidas));
     }
 
     @GetMapping

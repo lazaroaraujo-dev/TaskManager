@@ -82,6 +82,16 @@ public class UserRepository {
         }
         return users;
     }
+    // Incrementa o contador de forma atômica (O(1))
+    public void incrementarTarefasConcluidas(String userId) {
+        valkey.opsForValue().increment("user:" + userId + ":stats:completed");
+    }
+
+    // Lê o valor atual do contador
+    public int buscarTarefasConcluidas(String userId) {
+        String count = valkey.opsForValue().get("user:" + userId + ":stats:completed");
+        return count != null ? Integer.parseInt(count) : 0;
+    }
 
     public void atualizar(User user) {
         salvar(user);

@@ -93,14 +93,18 @@ public class TaskService {
         }
         taskRepository.excluir(id);
     }
-
     public TaskResponse concluir(String id) {
         Task task = taskRepository.buscarPorId(id);
         if (task == null) {
             throw new RuntimeException("Tarefa não encontrada.");
         }
-        task.setStatus(StatusTarefa.CONCLUIDA);
+
+        task.setStatus(com.lazaro.taskmanager.model.StatusTarefa.CONCLUIDA);
         taskRepository.atualizar(task);
+
+        //  Dispara o contador atômico no Valkey
+        userRepository.incrementarTarefasConcluidas(task.getUserId());
+
         return new TaskResponse(task);
     }
 }
