@@ -50,6 +50,12 @@ public class ProjectService {
                 .collect(Collectors.toList());
     }
 
+    public List<ProjectResponse> listarTodos() {
+        return projectRepository.buscarTodos().stream()
+                .map(ProjectResponse::new)
+                .collect(Collectors.toList());
+    }
+
     public void deletar(String id) {
         Project project = projectRepository.buscarPorId(id);
         if (project == null) {

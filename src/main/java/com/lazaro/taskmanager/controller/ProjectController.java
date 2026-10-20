@@ -26,6 +26,12 @@ public class ProjectController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @GetMapping
+    public ResponseEntity<List<ProjectResponse>> listarTodos() {
+        List<ProjectResponse> response = projectService.listarTodos();
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ProjectResponse> buscarPorId(@PathVariable String id) {
         ProjectResponse response = projectService.buscarPorId(id);
