@@ -49,7 +49,7 @@ public class ProjectRepository {
     }
 
     public List<Project> buscarPorUsuario(String userId) {
-        // Busca os IDs dos projetos que pertencem a este usuário no Set
+
         Set<String> projectIds = valkey.opsForSet().members("user:" + userId + ":projects");
         if (projectIds == null || projectIds.isEmpty()) {
             return Collections.emptyList();
@@ -61,7 +61,7 @@ public class ProjectRepository {
             if (p != null) {
                 projects.add(p);
             } else {
-                // Limpeza caso o projeto tenha sido deletado incorretamente
+
                 valkey.opsForSet().remove("user:" + userId + ":projects", id);
             }
         }
